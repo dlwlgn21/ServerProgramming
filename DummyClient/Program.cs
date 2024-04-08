@@ -23,9 +23,11 @@ while (true)
         Console.WriteLine($"Conectted To {socket.RemoteEndPoint.ToString()}");
 
         // 보낸다
-
-        byte[] sendBuffer = Encoding.UTF8.GetBytes("Hello Sevver World!!");
-        int sendBytes = socket.Send(sendBuffer);
+        for (int i = 0; i < 5; ++i)
+        {
+            byte[] sendBuffer = Encoding.UTF8.GetBytes($"Hello Sever World!! {i}\n");
+            int sendBytes = socket.Send(sendBuffer);
+        }
 
         // 받는다.
         byte[] recvBuffer = new byte[1024];

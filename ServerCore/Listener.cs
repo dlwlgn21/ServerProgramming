@@ -40,11 +40,18 @@ namespace ServerCore
             // SocketAsyncEventArgs를 재사용하기 때문에 깨끗이 밀어줘야 한다. 
             args.AcceptSocket = null;
 
-            bool isPending = _listenSocket.AcceptAsync(args); // 당장 완료한다는 보장은 없음. 다만 요청을 할 뿐. 요기가 계속 호출되는 부분.
+            // 당장 완료한다는 보장은 없음. 다만 요청을 할 뿐. 요기가 계속 호출되는 부분.
+            bool isPending = _listenSocket.AcceptAsync(args);
+
+            // 만약에 isPending이 계속 무한대로 false가 되면 어떻게 될까??
+            // StackOverFlow가 발생하지 않을까?? 함수가 서로 물고있으니까!
+            // 하지만 isPending이 계속 false가 뜨는 경우가 현실적으로 일어날 수 없다고 함.
+            // Init()->_listenSocket.Listen(10); // Backlog == 최대 대기수 이곳에서도 이미 방어코드가 작성되어 있음!
             if (isPending == false)
                 OnAcceptCompleted(null, args);
         }
 
+        // 이 함수는 RedZone!! 멀티쓰레딩에 안전하게 코드를 짜야한다.
         void OnAcceptCompleted(object? sender, SocketAsyncEventArgs args)
         {
             if (args.SocketError == SocketError.Success)

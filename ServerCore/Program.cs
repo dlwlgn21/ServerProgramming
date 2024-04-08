@@ -15,19 +15,17 @@ internal class Program
     {
         try
         {
-            // 손님이 보낸 메시지를 받는다.
-            byte[] recvBuffer = new byte[1024];
-            int recvBytes = clientSocket.Receive(recvBuffer); // 클라이언트에서 보내준 데이터는 recvBuffer에 저장이 됨.
-            string recvData = Encoding.UTF8.GetString(recvBuffer, 0, recvBytes);
-            Console.WriteLine($"From Client : {recvData}");
-
             // 내가 메시지를 손님에게 보낸다.
+            Session session = new Session();
+            session.Start(clientSocket);
             byte[] sendBuffer = Encoding.UTF8.GetBytes("Welcom To MMO RPG Server!");
-            clientSocket.Send(sendBuffer);
+            session.Send(sendBuffer);
 
-            // 쫓아낸다.
-            clientSocket.Shutdown(SocketShutdown.Both);
-            clientSocket.Close();
+            Thread.Sleep(1000);
+
+            session.Disconnect();
+            session.Disconnect();
+
         }
         catch (Exception e)
         {
