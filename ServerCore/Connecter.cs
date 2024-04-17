@@ -31,7 +31,9 @@ namespace ServerCore
         void RegisterConnect(SocketAsyncEventArgs args)
         {
             Debug.Assert(args != null && args.UserToken != null);
+#pragma warning disable CS8600 // null 리터럴 또는 가능한 null 값을 null을 허용하지 않는 형식으로 변환하는 중입니다.
             Socket socket = args.UserToken as Socket;
+#pragma warning restore CS8600 // null 리터럴 또는 가능한 null 값을 null을 허용하지 않는 형식으로 변환하는 중입니다.
             if (socket == null)
             {
                 Debug.Assert(false);

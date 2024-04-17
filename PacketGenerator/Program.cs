@@ -1,10 +1,4 @@
-﻿using PacketGenerator;
-using System;
-using System.Diagnostics;
-using System.Net;
-using System.Reflection.PortableExecutable;
-using System.Security.Cryptography.X509Certificates;
-using System.Text;
+﻿using System.Diagnostics;
 using System.Xml;
 
 namespace PacketGenerator
@@ -12,15 +6,23 @@ namespace PacketGenerator
     internal class Program
     {
         public static string genPackets;
+        public static ushort packetID = 0;
+        public static string packetEnums;
+        public static string serverRegister;
+        public static string clientRegister;
         static void Main(string[] args)
         {
+            string pdlFilePath = "../../PDL.xml";
             XmlReaderSettings settings = new XmlReaderSettings()
             {
                 IgnoreComments = true,
                 IgnoreWhitespace = true
             };
 
-            using (XmlReader reader = XmlReader.Create("PDL.xml", settings))
+            if (args.Length >= 1)
+                pdlFilePath = args[0];
+
+            using (XmlReader reader = XmlReader.Create(pdlFilePath, settings))
             {
                 reader.MoveToContent();
                 while (reader.Read())
@@ -31,8 +33,15 @@ namespace PacketGenerator
                     }
                     Console.WriteLine(reader.Name + " " + reader["name"]);
                 }
-                File.WriteAllText("GenPackets.cs", genPackets);
 
+                string finalFileText = string.Format(PacketFormat.sFileForamat, packetEnums, genPackets);
+                File.WriteAllText("GenPackets.cs", finalFileText);
+
+                string clientManagerText = string.Format(PacketFormat.sManagerFormat, clientRegister);
+                File.WriteAllText("ClientPacketManager.cs", clientManagerText);
+
+                string serverManagerText = string.Format(PacketFormat.sManagerFormat, serverRegister);
+                File.WriteAllText("ServerPacketManager.cs", serverManagerText);
             }
 
             static void ParsePacket(XmlReader reader)
@@ -62,6 +71,11 @@ namespace PacketGenerator
                     PacketFormat.sPacketFormat,
                     packetName, tuple.Item1, tuple.Item2, tuple.Item3
                 );
+                packetEnums += string.Format(PacketFormat.sPacketEnumFormat, packetName, ++packetID) +Environment.NewLine + "\t";
+                if (packetName.StartsWith("S_") || packetName.StartsWith("s_"))
+                    clientRegister += string.Format(PacketFormat.sManagerRegisterFormat, packetName) + Environment.NewLine;
+                else
+                    serverRegister += string.Format(PacketFormat.sManagerRegisterFormat, packetName) + Environment.NewLine;
             }
             static Tuple<string, string, string> ParseListOrNull(XmlReader reader)
             {
@@ -165,6 +179,12 @@ namespace PacketGenerator
                     string memberType = reader.Name.ToLower();
                     switch (memberType)
                     {
+                        case "byte":
+                        case "sbyte":
+                            memberVarCode += string.Format(PacketFormat.sMemberVariableFormat, memberType, memberName);
+                            readMethodCode += string.Format(PacketFormat.sReadByteFormat, memberName, memberType);
+                            writeMethodCode += string.Format(PacketFormat.sWrtieByteFormat, memberName, memberType);
+                            break;
                         case "bool":
                         case "short":
                         case "ushort":

@@ -8,15 +8,112 @@ namespace PacketGenerator
 {
     internal class PacketFormat
     {
+        // {0} 패킷 등록
+        public static string sManagerFormat =
+@"using ServerCore;
+using System.Diagnostics;
+
+class PacketManager
+{{
+    #region Singleton
+    static PacketManager _instance;
+    public static PacketManager Instance
+    {{
+        get
+        {{
+            if (_instance == null)
+                _instance = new PacketManager();
+            return _instance;
+        }}
+    }}
+    #endregion
+
+
+    Dictionary<ushort, Action<PacketSession, ArraySegment<byte>>> _onRecvMap = new Dictionary<ushort, Action<PacketSession, ArraySegment<byte>>>();
+    Dictionary<ushort, Action<PacketSession, IPacket>> _handlerMap =   new Dictionary<ushort, Action<PacketSession, IPacket>>();
+
+    public void Register()
+    {{
+{0}
+    }}
+        
+    public void OnRecvPacket(PacketSession session, ArraySegment<byte> buffer)
+    {{
+        ushort byteCount = 0;
+        ushort size = BitConverter.ToUInt16(buffer.Array!, buffer.Offset);
+        byteCount += sizeof(ushort);
+        ushort id = BitConverter.ToUInt16(buffer.Array!, buffer.Offset + byteCount);
+        byteCount += sizeof(ushort);
+        Action<PacketSession, ArraySegment<byte>> makePacketAction = null;
+        if (_onRecvMap.TryGetValue(id, out makePacketAction))
+            makePacketAction.Invoke(session, buffer);
+        else
+            Debug.Assert(false);
+    }}
+
+    void MakePacket<T>(PacketSession session, ArraySegment<byte> buffer) where T : IPacket, new()
+    {{
+        T packet = new T();
+        packet.Read(buffer);
+
+        Action<PacketSession, IPacket> handlerAction = null;
+        if (_handlerMap.TryGetValue(packet.Protocol, out handlerAction))
+            handlerAction.Invoke(session, packet);
+        else
+            Debug.Assert(false);
+    }}
+}}
+";
+
+        // {0} 패킷 이름
+        public static string sManagerRegisterFormat =
+@"       _onRecvMap.Add((ushort)EPacketID.{0}, MakePacket<{0}>);
+        _handlerMap.Add((ushort)EPacketID.{0}, PacketHandler.{0}Handler);
+";
+
+
+
+        // {0} 패킷 이름/번호목록
+        // {1} 패킷 목록
+        public static string sFileForamat =
+@"using System;
+using System.Diagnostics;
+using System.Net;
+using System.Text;
+using ServerCore;
+
+public enum EPacketID
+{{
+    {0}
+}}
+
+interface IPacket
+{{ 
+	ushort Protocol {{ get; }}
+	void Read(ArraySegment<byte> seg);
+	ArraySegment<byte> WriteOrNull();
+}}
+
+{1}
+";
+
+        // {0} 패킷 이름
+        // {1} 패킷 번호
+        public static string sPacketEnumFormat =
+@"{0} = {1},";
+
+
+
         // {0} 패킷 이름
         // {1} 멤버 변수들
         // {2} 멤버 변수 read
         // {3} 멤버 변수 write
         public static string sPacketFormat =
 @"
-public class {0}
+public class {0} : IPacket
 {{
     {1}
+	public ushort Protocol {{ get {{ return (ushort)EPacketID.{0}; }} }}
     
     public void Read(ArraySegment<byte> seg)
     {{
@@ -56,7 +153,7 @@ public class {0}
         // {3} 멤버 변수 write
         public static string sMemberVariableListFormat =
 @"        
-public struct {0}
+public class {0}
 {{
     {1}
     public void Read(ReadOnlySpan<byte> span, ref ushort byteCount)
@@ -84,6 +181,11 @@ public List<{0}> {0}s = new List<{0}>();
 byteCount += sizeof({2});";
 
         // {0} 변수 이름
+        // {1} 변수 형식
+        public static string sReadByteFormat =
+@"this.{0} = ({1})seg.Array[seg.Offset + byteCount];
+byteCount += sizeof({1});";
+        // {0} 변수 이름
         public static string sReadStringFormat =
 @"ushort {0}Length = BitConverter.ToUInt16(span.Slice(byteCount, span.Length - byteCount));
 byteCount += sizeof(ushort);
@@ -107,6 +209,12 @@ for (int i = 0; i < {0}Length; ++i)
         // {1} 변수 형식
         public static string sWriteFormat =
 @"isSuccess &= BitConverter.TryWriteBytes(span.Slice(byteCount, span.Length - byteCount), this.{0});
+byteCount += sizeof({1});";
+
+        // {0} 변수 이름
+        // {1} 변수 형식
+        public static string sWrtieByteFormat =
+@"openSeg.Array[openSeg.Offset + byteCount] = ({1})this.{0};
 byteCount += sizeof({1});";
 
         // {0} 변수 이름

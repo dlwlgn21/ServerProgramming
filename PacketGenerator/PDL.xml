@@ -1,12 +1,20 @@
 ﻿<?xml version="1.0" encoding="utf-8" ?>
 <PDL>
-	<packet name="PlayerInfoReq">
+	<packet name="C_PlayerInfoReq">
+		<byte name="TestByte"/>
 		<long name="PlayerID"/>
 		<string name="PlayerName"/>
 		<list name="Skill">
 			<int name="Id"/>
 			<short name="Level"/>
 			<float name="Duration"/>
+			<list name ="Attribute">
+				<int name="Att"/>
+			</list>
 		</list>
+	</packet>
+
+	<packet name="S_Test">
+		<int name ="TestInt"/>
 	</packet>
 </PDL>
